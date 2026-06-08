@@ -1,0 +1,3360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>BrewMind — AI Creative Studio for Cafés</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --ink: #0a0a0a;
+            --paper: #ffffff;
+            --gold: #ff6b00;
+            --gold2: #ff8c38;
+            --gold-dim: rgba(255, 107, 0, 0.15);
+            --dim: #1a1a1a;
+            --mist: rgba(255, 107, 0, 0.04);
+            --line: rgba(0, 0, 0, 0.1);
+            --warm: #555555;
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-ui: 'Poppins', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            background: #ffffff;
+            color: var(--ink);
+            font-family: var(--font-ui);
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* ─── GRAIN OVERLAY ─── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 9990;
+            pointer-events: none;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 200px;
+            mix-blend-mode: overlay;
+        }
+
+        /* ─── CURSOR ─── */
+        #cur {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+        }
+
+        #cur-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--ink);
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            transition: transform .15s ease, width .25s ease, height .25s ease;
+        }
+
+        #cur-ring {
+            width: 36px;
+            height: 36px;
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            transition: width .35s ease, height .35s ease, opacity .3s ease;
+        }
+
+        body.hovering #cur-dot {
+            width: 12px;
+            height: 12px;
+        }
+
+        body.hovering #cur-ring {
+            width: 56px;
+            height: 56px;
+            border-color: var(--gold);
+        }
+
+        /* ─── NAV ─── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 0 64px;
+            height: 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: height .5s ease, background .5s ease;
+        }
+
+        nav.scrolled {
+            height: 64px;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            color: var(--ink);
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: var(--gold);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-size: .7rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, .45);
+            text-decoration: none;
+            transition: color .3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--ink);
+        }
+
+        .nav-btn {
+            font-size: .68rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 2px solid var(--ink);
+            color: var(--ink);
+            padding: 10px 24px;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: background .3s, border-color .3s, color .3s;
+            flex-shrink: 0;
+        }
+
+        .nav-btn:hover {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: #ffffff;
+        }
+
+        /* ─── HERO ─── */
+        #hero {
+            min-height: 100vh;
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            padding: 0 64px;
+            padding-top: 80px;
+            overflow: hidden;
+            gap: 60px;
+        }
+
+        .hero-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background: radial-gradient(ellipse 70% 60% at 80% 40%, rgba(255, 107, 0, .06) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 10% 80%, rgba(255, 107, 0, .04) 0%, transparent 50%);
+        }
+
+        .hero-ring-wrap {
+            position: absolute;
+            right: -5vw;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 55vmin;
+            height: 55vmin;
+            z-index: 0;
+            opacity: .12;
+            animation: spinRing 40s linear infinite;
+        }
+
+        @keyframes spinRing {
+            to {
+                transform: translateY(-50%) rotate(360deg);
+            }
+        }
+
+        .hero-ring-wrap2 {
+            position: absolute;
+            right: 4vw;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38vmin;
+            height: 38vmin;
+            z-index: 0;
+            opacity: .08;
+            animation: spinRing 25s linear infinite reverse;
+        }
+
+        .particles {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--gold);
+            opacity: 0;
+            animation: floatUp var(--d, 8s) var(--delay, 0s) ease-in-out infinite;
+            width: var(--s, 2px);
+            height: var(--s, 2px);
+            left: var(--x, 50%);
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(1);
+            }
+
+            20% {
+                opacity: .6;
+            }
+
+            80% {
+                opacity: .3;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-80vh) scale(0.4);
+            }
+        }
+
+        /* Hero Left */
+        .hero-left {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-top: 40px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: .65rem;
+            letter-spacing: .25em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 36px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp .9s .4s ease forwards;
+        }
+
+        .hero-badge::before {
+            content: '';
+            width: 32px;
+            height: 1px;
+            background: var(--gold);
+            opacity: .5;
+        }
+
+        .hero-badge::after {
+            content: '';
+            width: 32px;
+            height: 1px;
+            background: var(--gold);
+            opacity: .5;
+        }
+
+        .hero-h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3.5rem, 7vw, 8.5rem);
+            font-weight: 300;
+            line-height: .92;
+            letter-spacing: -.015em;
+            color: var(--ink);
+            overflow: hidden;
+        }
+
+        .hero-h1 .line {
+            display: block;
+            overflow: hidden;
+        }
+
+        .hero-h1 .inner {
+            display: block;
+            transform: translateY(110%);
+            animation: slideUp 1.2s ease forwards;
+        }
+
+        .hero-h1 .line:nth-child(2) .inner {
+            animation-delay: .15s;
+        }
+
+        .hero-h1 .line:nth-child(3) .inner {
+            animation-delay: .3s;
+        }
+
+        .hero-h1 em {
+            font-style: italic;
+            color: var(--gold);
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-sub {
+            font-family: var(--font-ui);
+            font-size: .9rem;
+            line-height: 1.85;
+            color: rgba(0, 0, 0, .5);
+            max-width: 480px;
+            font-weight: 400;
+            margin-top: 32px;
+            opacity: 0;
+            animation: fadeUp .8s .9s ease forwards;
+        }
+
+        .hero-cta-wrap {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 40px;
+            opacity: 0;
+            animation: fadeUp .8s 1.1s ease forwards;
+        }
+
+        .btn-dark {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--gold);
+            color: #ffffff;
+            padding: 16px 36px;
+            border-radius: 50px;
+            font-family: 'Poppins', sans-serif;
+            font-size: .72rem;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            text-decoration: none;
+            border: 2px solid var(--gold);
+            cursor: none;
+            transition: background .3s, transform .2s, box-shadow .3s;
+        }
+
+        .btn-dark:hover {
+            background: var(--gold2);
+            border-color: var(--gold2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 107, 0, 0.35);
+        }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
+            color: var(--ink);
+            padding: 16px 36px;
+            border-radius: 50px;
+            font-family: 'Poppins', sans-serif;
+            font-size: .72rem;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            text-decoration: none;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            cursor: none;
+            transition: border-color .3s, transform .2s, background .3s;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--ink);
+            transform: translateY(-2px);
+        }
+
+        .hero-meta-row {
+            display: flex;
+            gap: 40px;
+            margin-top: 52px;
+            opacity: 0;
+            animation: fadeUp .8s 1.3s ease forwards;
+            padding-top: 40px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .hm-stat {}
+
+        .hm-n {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .hm-l {
+            font-size: .65rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, .4);
+            margin-top: 5px;
+        }
+
+        /* Hero Right */
+        .hero-right {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 40px;
+            opacity: 0;
+            animation: fadeUp 1s .6s ease forwards;
+        }
+
+        .hero-visual-card {
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .hero-main-visual {
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: #f5f5f5;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-visual-glow {
+            position: absolute;
+            width: 70%;
+            height: 70%;
+            background: radial-gradient(circle, rgba(255, 107, 0, .12) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: breathe 5s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.15);
+            }
+        }
+
+        /* Floating card on hero visual */
+        .hero-float-card {
+            position: absolute;
+            background: #ffffff;
+            border: 1px solid rgba(255,107,0,0.15);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .hero-float-card.top-left {
+            top: -16px;
+            left: -20px;
+        }
+
+        .hero-float-card.bottom-right {
+            bottom: 24px;
+            right: -20px;
+        }
+
+        .hfc-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--gold);
+            box-shadow: 0 0 10px var(--gold);
+            animation: pulse 2.5s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 4px var(--gold);
+            }
+
+            50% {
+                box-shadow: 0 0 18px var(--gold);
+            }
+        }
+
+        .hfc-label {
+            font-size: .68rem;
+            color: rgba(0, 0, 0, .7);
+            white-space: nowrap;
+        }
+
+        .hfc-n {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .hfc-sub {
+            font-size: .58rem;
+            color: rgba(0, 0, 0, .4);
+            text-transform: uppercase;
+            letter-spacing: .1em;
+        }
+
+        /* Scroll indicator */
+        .hero-scroll-ind {
+            position: absolute;
+            bottom: 44px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            animation: fadeUp .6s 1.6s ease forwards;
+        }
+
+        .scroll-text {
+            font-size: .58rem;
+            letter-spacing: .3em;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, .25);
+        }
+
+        .scroll-bar {
+            width: 1px;
+            height: 60px;
+            background: linear-gradient(to bottom, var(--gold), transparent);
+            animation: barDrop 2s 1.8s ease-in-out infinite;
+        }
+
+        @keyframes barDrop {
+            0% {
+                transform: scaleY(0);
+                transform-origin: top;
+                opacity: 0;
+            }
+
+            50% {
+                transform: scaleY(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scaleY(1);
+                transform-origin: bottom;
+                opacity: 0;
+            }
+        }
+
+        /* ─── MARQUEE ─── */
+        .marquee-wrap {
+            border-top: 1px solid rgba(0,0,0,0.08);
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            padding: 18px 0;
+            overflow: hidden;
+            background: #fafafa;
+        }
+
+        .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: marquee 30s linear infinite;
+        }
+
+        .marquee-item {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            padding: 0 28px;
+            font-size: .68rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, .3);
+            white-space: nowrap;
+            font-family: var(--font-ui);
+        }
+
+        .marquee-item .sep {
+            color: var(--gold);
+            font-size: .5rem;
+        }
+
+        @keyframes marquee {
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ─── SECTIONS ─── */
+        .section {
+            padding: 140px 64px;
+        }
+
+        .section.dark {
+            background: #ffffff;
+        }
+
+        .section.paper {
+            background: #f8f8f8;
+        }
+
+        .section.mid {
+            background: #f5f5f5;
+        }
+
+        .s-label {
+            font-size: .63rem;
+            letter-spacing: .28em;
+            text-transform: uppercase;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+            font-family: var(--font-ui);
+        }
+
+        .s-label::before {
+            content: '';
+            width: 28px;
+            height: 1px;
+            background: var(--gold);
+        }
+
+        .s-h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2.8rem, 5.5vw, 6rem);
+            font-weight: 300;
+            line-height: 1;
+            letter-spacing: -.015em;
+            color: var(--ink);
+        }
+
+        .s-h2 em {
+            font-style: italic;
+            color: var(--gold);
+        }
+
+        .s-h2 strong {
+            font-weight: 600;
+        }
+
+        /* Reveal classes */
+        .r {
+            opacity: 0;
+            transform: translateY(48px);
+            transition: opacity .9s ease, transform .9s ease;
+        }
+
+        .r.up {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .rl {
+            opacity: 0;
+            transform: translateX(-48px);
+            transition: opacity .9s ease, transform .9s ease;
+        }
+
+        .rl.up {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .rr {
+            opacity: 0;
+            transform: translateX(48px);
+            transition: opacity .9s ease, transform .9s ease;
+        }
+
+        .rr.up {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .rs {
+            opacity: 0;
+            transform: scale(.94);
+            transition: opacity .9s ease, transform .9s ease;
+        }
+
+        .rs.up {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* ─── ABOUT ─── */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 100px;
+            align-items: start;
+            margin-top: 80px;
+        }
+
+        .about-visual-wrap {
+            position: sticky;
+            top: 120px;
+        }
+
+        .about-svg-wrap {
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: #f0f0f0;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .about-glow {
+            position: absolute;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(255, 107, 0, .15) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: breathe 5s ease-in-out infinite;
+        }
+
+        .about-badge {
+            position: absolute;
+            bottom: 28px;
+            right: 28px;
+            background: #ffffff;
+            border: 1px solid rgba(255,107,0,0.2);
+            border-radius: 12px;
+            padding: 18px 22px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .about-badge-n {
+            font-family: var(--font-display);
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .about-badge-l {
+            font-size: .62rem;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, .4);
+            margin-top: 5px;
+        }
+
+        .about-blocks {
+            display: flex;
+            flex-direction: column;
+            gap: 56px;
+        }
+
+        .ab-num {
+            font-size: .6rem;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 14px;
+        }
+
+        .ab-h3 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 14px;
+            line-height: 1.15;
+            color: var(--ink);
+        }
+
+        .ab-p {
+            font-size: .88rem;
+            line-height: 1.85;
+            color: rgba(0, 0, 0, .45);
+            font-weight: 400;
+        }
+
+        .ab-divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(0,0,0,0.08);
+            margin-top: 56px;
+        }
+
+        /* ─── PROBLEM / AI SECTION ─── */
+        .prob-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 100px;
+            align-items: center;
+            margin-top: 80px;
+        }
+
+        .prob-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .prob-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.07);
+            padding: 28px 32px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            transition: background .4s, border-color .4s, transform .4s, box-shadow .4s;
+            cursor: none;
+            border-radius: 8px;
+            margin-bottom: 2px;
+        }
+
+        .prob-card:hover {
+            background: #fff8f5;
+            border-color: rgba(255, 107, 0, .3);
+            transform: translateX(8px);
+            box-shadow: 0 4px 16px rgba(255,107,0,0.08);
+        }
+
+        .pc-icon {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--gold);
+            transition: border-color .4s;
+        }
+
+        .prob-card:hover .pc-icon {
+            border-color: var(--gold);
+        }
+
+        .pc-h4 {
+            font-size: .88rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--ink);
+            letter-spacing: .02em;
+        }
+
+        .pc-p {
+            font-size: .8rem;
+            line-height: 1.65;
+            color: rgba(0, 0, 0, .4);
+        }
+
+        .prob-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            margin-top: 40px;
+        }
+
+        .ps-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.07);
+            padding: 28px;
+            transition: background .3s, box-shadow .3s;
+            border-radius: 8px;
+        }
+
+        .ps-card:hover {
+            background: #fff8f5;
+            box-shadow: 0 4px 16px rgba(255,107,0,0.08);
+        }
+
+        .ps-n {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .ps-l {
+            font-size: .7rem;
+            color: rgba(0, 0, 0, .4);
+            margin-top: 8px;
+            letter-spacing: .04em;
+        }
+
+        /* ─── SERVICES ─── */
+        .services-intro {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 70px;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .services-desc {
+            font-size: .9rem;
+            line-height: 1.8;
+            color: rgba(0, 0, 0, .4);
+            max-width: 380px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
+
+        .svc-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.07);
+            padding: 44px 36px;
+            cursor: none;
+            position: relative;
+            overflow: hidden;
+            transition: border-color .4s, box-shadow .4s, transform .3s;
+            border-radius: 8px;
+        }
+
+        .svc-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 107, 0, .04), transparent);
+            opacity: 0;
+            transition: opacity .5s;
+        }
+
+        .svc-card:hover {
+            border-color: rgba(255, 107, 0, .3);
+            box-shadow: 0 8px 32px rgba(255,107,0,0.08);
+            transform: translateY(-4px);
+        }
+
+        .svc-card:hover::after {
+            opacity: 1;
+        }
+
+        .svc-svg {
+            margin-bottom: 28px;
+            display: block;
+        }
+
+        .svc-n {
+            font-size: .58rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 14px;
+        }
+
+        .svc-h {
+            font-family: var(--font-display);
+            font-size: 1.45rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            line-height: 1.15;
+            color: var(--ink);
+        }
+
+        .svc-p {
+            font-size: .8rem;
+            line-height: 1.7;
+            color: rgba(0, 0, 0, .4);
+        }
+
+        .svc-arrow {
+            display: inline-block;
+            margin-top: 28px;
+            font-size: .8rem;
+            color: rgba(0, 0, 0, .2);
+            transition: color .3s, transform .3s;
+        }
+
+        .svc-card:hover .svc-arrow {
+            color: var(--gold);
+            transform: translate(4px, -4px);
+        }
+
+        /* ─── TRANSFORMATION — BENTO GRID ─── */
+        .bento-header {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 60px;
+            max-width: 700px;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: auto;
+            gap: 3px;
+        }
+
+        /* Card base */
+        .bc {
+            border: 1px solid rgba(0,0,0,0.07);
+            position: relative;
+            overflow: hidden;
+            transition: border-color .4s, transform .35s cubic-bezier(.16, 1, .3, 1), box-shadow .4s;
+            cursor: none;
+            background: #ffffff;
+            border-radius: 8px;
+        }
+
+        .bc:hover {
+            border-color: rgba(255, 107, 0, .3);
+            box-shadow: 0 8px 24px rgba(255,107,0,0.08);
+        }
+
+        /* Spans */
+        .bc-a {
+            grid-column: span 5;
+            grid-row: span 2;
+            min-height: 420px;
+            background: #0f0c08;
+        }
+
+        .bc-b {
+            grid-column: span 4;
+            min-height: 200px;
+        }
+
+        .bc-c {
+            grid-column: span 3;
+            min-height: 200px;
+        }
+
+        .bc-d {
+            grid-column: span 7;
+            min-height: 200px;
+        }
+
+        .bc-e {
+            grid-column: span 3;
+            min-height: 200px;
+        }
+
+        .bc-f {
+            grid-column: span 2;
+            min-height: 200px;
+        }
+
+        .bc-g {
+            grid-column: span 7;
+            min-height: 180px;
+        }
+
+        .bc-h {
+            grid-column: span 5;
+            min-height: 180px;
+        }
+
+        /* Inner padding */
+        .bc-inner {
+            padding: 32px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .bc-inner.center {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .bc-inner.space {
+            justify-content: space-between;
+        }
+
+        .bc-tag {
+            font-size: .6rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 12px;
+        }
+
+        .bc-h {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 600;
+            line-height: 1.15;
+            color: var(--ink);
+            margin-bottom: 10px;
+        }
+
+        .bc-p {
+            font-size: .78rem;
+            line-height: 1.65;
+            color: rgba(0, 0, 0, .4);
+        }
+
+        .bc-num {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .bc-num-label {
+            font-size: .68rem;
+            color: rgba(0, 0, 0, .4);
+            margin-top: 6px;
+            letter-spacing: .06em;
+        }
+
+        /* Before/after pill */
+        .ba-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 107, 0, .06);
+            border: 1px solid rgba(255, 107, 0, .15);
+            border-radius: 99px;
+            padding: 6px 14px;
+            margin-bottom: 18px;
+            font-size: .62rem;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            color: var(--gold);
+        }
+
+        .bc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .bc-li {
+            font-size: .8rem;
+            color: rgba(0, 0, 0, .5);
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .bc-li::before {
+            content: '✦';
+            color: var(--gold);
+            font-size: .45rem;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .bc-li.muted::before {
+            content: '—';
+            color: rgba(0, 0, 0, .2);
+        }
+
+        .bc-li.muted {
+            color: rgba(0, 0, 0, .25);
+        }
+
+        /* Glow overlay for cards */
+        .bc-glow {
+            position: absolute;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 107, 0, .1) 0%, transparent 70%);
+        }
+
+        .bc-glow.tl {
+            top: -40%;
+            left: -20%;
+            width: 160%;
+            height: 160%;
+        }
+
+        .bc-glow.br {
+            bottom: -40%;
+            right: -20%;
+            width: 160%;
+            height: 160%;
+        }
+
+        .bc-glow.c {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140%;
+            height: 140%;
+        }
+
+        /* ─── SOCIAL SHOWCASE — BENTO ─── */
+        .showcase-bento {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 3px;
+            margin-top: 70px;
+        }
+
+        /* Showcase bento spans */
+        .sb-a {
+            grid-column: span 5;
+            grid-row: span 2;
+            min-height: 580px;
+        }
+
+        .sb-b {
+            grid-column: span 4;
+            min-height: 280px;
+        }
+
+        .sb-c {
+            grid-column: span 3;
+            min-height: 280px;
+        }
+
+        .sb-d {
+            grid-column: span 3;
+            min-height: 280px;
+        }
+
+        .sb-e {
+            grid-column: span 4;
+            min-height: 280px;
+        }
+
+        .sb-f {
+            grid-column: span 5;
+            min-height: 280px;
+        }
+
+        .sb-g {
+            grid-column: span 7;
+            min-height: 220px;
+        }
+
+        .show-card {
+            background: #f0f0f0;
+            border: 1px solid rgba(0,0,0,0.07);
+            position: relative;
+            overflow: hidden;
+            cursor: none;
+            transition: transform .4s cubic-bezier(.16, 1, .3, 1);
+            border-radius: 8px;
+        }
+
+        .show-card:hover {
+            transform: scale(1.02);
+            z-index: 2;
+        }
+
+        .show-inner {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .show-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(8, 7, 6, .85) 0%, transparent 55%);
+            z-index: 1;
+        }
+
+        .show-meta {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 2;
+            padding: 24px 28px;
+        }
+
+        .show-tag {
+            font-size: .6rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: rgba(255,255,255, .7);
+            margin-bottom: 8px;
+        }
+
+        .show-name {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        /* Extra bento showcase tile */
+        .sb-stats {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 32px;
+            background: var(--ink);
+            border: 1px solid rgba(0,0,0,0.1);
+            cursor: none;
+            transition: border-color .4s;
+            border-radius: 8px;
+        }
+
+        .sb-stats:hover {
+            border-color: var(--gold);
+        }
+
+        .sbs-label {
+            font-size: .6rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--gold);
+        }
+
+        .sbs-n {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1;
+        }
+
+        .sbs-sub {
+            font-size: .75rem;
+            color: rgba(255, 255, 255, .45);
+            margin-top: 4px;
+        }
+
+        /* ─── SEO ─── */
+        .seo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 100px;
+            align-items: center;
+        }
+
+        .seo-feats {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-top: 44px;
+        }
+
+        .sf {
+            padding: 18px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: padding-left .3s;
+            cursor: none;
+        }
+
+        .sf:hover {
+            padding-left: 10px;
+        }
+
+        .sf-l {
+            font-size: .88rem;
+            color: rgba(0, 0, 0, .6);
+        }
+
+        .sf-tag {
+            font-size: .6rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            background: rgba(255, 107, 0, .08);
+            color: var(--gold);
+            padding: 5px 12px;
+            border-radius: 50px;
+        }
+
+        .seo-chart-wrap {
+            position: relative;
+        }
+
+        .seo-metric-card {
+            position: absolute;
+            top: -24px;
+            right: -24px;
+            background: var(--gold);
+            padding: 20px 26px;
+            border-radius: 2px;
+            color: var(--ink);
+            z-index: 2;
+        }
+
+        .smc-n {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .smc-l {
+            font-size: .65rem;
+            margin-top: 4px;
+            opacity: .7;
+            font-weight: 600;
+        }
+
+        .seo-chart {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.07);
+            border-radius: 12px;
+            padding: 36px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+
+        .chart-ttl {
+            font-size: .6rem;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, .3);
+            margin-bottom: 28px;
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            height: 150px;
+        }
+
+        .cb {
+            flex: 1;
+            border-radius: 4px 4px 0 0;
+            background: rgba(0, 0, 0, .06);
+            position: relative;
+            transition: height 1.2s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        .cb.gold {
+            background: linear-gradient(to top, var(--gold), rgba(255, 107, 0, .3));
+        }
+
+        .cb.lit {
+            background: var(--gold);
+            box-shadow: 0 0 20px rgba(255, 107, 0, .4);
+        }
+
+        .chart-mnths {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .cm {
+            flex: 1;
+            text-align: center;
+            font-size: .58rem;
+            color: rgba(0, 0, 0, .2);
+        }
+
+        /* ─── TESTIMONIALS — INFINITE HORIZONTAL SCROLL ─── */
+        .test-section {
+            padding: 140px 0;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+
+        .test-header {
+            text-align: center;
+            padding: 0 64px;
+            margin-bottom: 70px;
+        }
+
+        .test-track-wrap {
+            position: relative;
+            overflow: hidden;
+            mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+        }
+
+        .test-track {
+            display: flex;
+            gap: 16px;
+            width: max-content;
+            animation: scrollTest 40s linear infinite;
+        }
+
+        .test-track:hover {
+            animation-play-state: paused;
+        }
+
+        .test-track-2 {
+            display: flex;
+            gap: 16px;
+            width: max-content;
+            animation: scrollTest2 50s linear infinite;
+            margin-top: 16px;
+        }
+
+        .test-track-2:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes scrollTest {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        @keyframes scrollTest2 {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+
+        .test-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.07);
+            padding: 36px 32px;
+            cursor: none;
+            transition: border-color .4s, transform .4s, box-shadow .4s;
+            flex-shrink: 0;
+            width: 380px;
+            border-radius: 12px;
+        }
+
+        .test-card:hover {
+            border-color: rgba(255,107,0,.25);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(255,107,0,0.08);
+        }
+
+        .test-stars {
+            color: var(--gold);
+            font-size: .85rem;
+            letter-spacing: 3px;
+            margin-bottom: 18px;
+        }
+
+        .test-q {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-style: italic;
+            line-height: 1.65;
+            color: rgba(0, 0, 0, .6);
+            margin-bottom: 24px;
+        }
+
+        .test-author {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .test-av {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), #cc4400);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1rem;
+            color: #ffffff;
+            flex-shrink: 0;
+        }
+
+        .test-name {
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .test-role {
+            font-size: .72rem;
+            color: rgba(0, 0, 0, .35);
+            margin-top: 3px;
+        }
+
+        /* ─── PROCESS ─── */
+        .process-steps {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0;
+            margin-top: 80px;
+            position: relative;
+        }
+
+        .process-steps::before {
+            content: '';
+            position: absolute;
+            top: 23px;
+            left: 24px;
+            right: 24px;
+            height: 1px;
+            background: linear-gradient(to right, var(--gold), transparent 80%);
+            z-index: 0;
+        }
+
+        .pstep {
+            padding: 0 20px 0 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .pstep-n {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 28px;
+            transition: background .3s, color .3s;
+        }
+
+        .pstep:hover .pstep-n {
+            background: var(--gold);
+            color: #ffffff;
+        }
+
+        .pstep-h {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--ink);
+        }
+
+        .pstep-p {
+            font-size: .78rem;
+            line-height: 1.65;
+            color: rgba(0, 0, 0, .4);
+        }
+
+        /* ─── MID CTA ─── */
+        .mid-cta {
+            padding: 140px 64px;
+            text-align: center;
+            background: var(--ink);
+            position: relative;
+            overflow: hidden;
+            border-top: none;
+            border-bottom: none;
+        }
+
+        .mid-cta-glow {
+            position: absolute;
+            width: 800px;
+            height: 400px;
+            background: radial-gradient(ellipse, rgba(255, 107, 0, .1) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .mid-cta-label {
+            font-size: .62rem;
+            letter-spacing: .28em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+        }
+
+        .mid-cta-label::before,
+        .mid-cta-label::after {
+            content: '';
+            width: 40px;
+            height: 1px;
+            background: var(--gold);
+            opacity: .4;
+        }
+
+        .mid-cta h2 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 7vw, 7.5rem);
+            font-weight: 300;
+            line-height: .95;
+            letter-spacing: -.015em;
+            color: #ffffff;
+            margin-bottom: 44px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .mid-cta h2 em {
+            font-style: italic;
+            color: var(--gold);
+        }
+
+        .mid-cta-btns {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .mid-cta .btn-ghost {
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .mid-cta .btn-ghost:hover {
+            border-color: #ffffff;
+        }
+
+        /* ─── CONTACT ─── */
+        .contact-section {
+            padding: 140px 64px;
+            background: #f8f8f8;
+        }
+
+        .contact-hero {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 80px;
+        }
+
+        .contact-hero p {
+            font-size: .95rem;
+            line-height: 1.85;
+            color: rgba(0, 0, 0, .45);
+            margin-top: 24px;
+        }
+
+        .contact-buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .contact-btn-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.07);
+            border-radius: 16px;
+            padding: 44px 36px;
+            text-decoration: none;
+            cursor: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 18px;
+            transition: background .4s, border-color .4s, transform .35s, box-shadow .4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-btn-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 107, 0, .04), transparent);
+            opacity: 0;
+            transition: opacity .4s;
+        }
+
+        .contact-btn-card:hover {
+            background: #fff8f5;
+            border-color: rgba(255, 107, 0, .3);
+            transform: translateY(-6px);
+            box-shadow: 0 16px 40px rgba(255,107,0,0.1);
+        }
+
+        .contact-btn-card:hover::after {
+            opacity: 1;
+        }
+
+        .cbc-icon {
+            width: 56px;
+            height: 56px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            transition: border-color .4s;
+            position: relative;
+            z-index: 1;
+        }
+
+        .contact-btn-card:hover .cbc-icon {
+            border-color: var(--gold);
+        }
+
+        .cbc-label {
+            font-size: .62rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--gold);
+            position: relative;
+            z-index: 1;
+        }
+
+        .cbc-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--ink);
+            position: relative;
+            z-index: 1;
+        }
+
+        .cbc-sub {
+            font-size: .78rem;
+            color: rgba(0, 0, 0, .4);
+            position: relative;
+            z-index: 1;
+        }
+
+        .cbc-arrow {
+            font-size: .85rem;
+            color: rgba(0, 0, 0, .2);
+            transition: color .3s, transform .3s;
+            position: relative;
+            z-index: 1;
+        }
+
+        .contact-btn-card:hover .cbc-arrow {
+            color: var(--gold);
+            transform: translate(4px, -4px);
+        }
+
+        /* ─── FOOTER ─── */
+        footer {
+            background: var(--ink);
+            border-top: none;
+            padding: 60px 64px;
+            color: #ffffff;
+        }
+
+        .footer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-bottom: 48px;
+        }
+
+        .footer-logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .footer-logo em {
+            font-style: italic;
+            color: var(--gold);
+        }
+
+        .footer-tagline {
+            font-size: .78rem;
+            color: rgba(255, 255, 255, .3);
+            max-width: 300px;
+            line-height: 1.7;
+            margin-top: 10px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .footer-links a {
+            font-size: .68rem;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, .35);
+            text-decoration: none;
+            transition: color .3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--gold);
+        }
+
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 32px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-copy {
+            font-size: .7rem;
+            color: rgba(255, 255, 255, .2);
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 1100px) {
+            #hero {
+                grid-template-columns: 1fr;
+                min-height: auto;
+                padding-top: 120px;
+                padding-bottom: 80px;
+                gap: 60px;
+            }
+
+            .hero-right {
+                display: none;
+            }
+
+            .hero-meta-row {
+                gap: 28px;
+            }
+
+            .services-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .process-steps {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 40px;
+            }
+
+            .process-steps::before {
+                display: none;
+            }
+
+            .bento-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .bc-a {
+                grid-column: span 6;
+                min-height: 260px;
+            }
+
+            .bc-b {
+                grid-column: span 3;
+            }
+
+            .bc-c {
+                grid-column: span 3;
+            }
+
+            .bc-d {
+                grid-column: span 4;
+            }
+
+            .bc-e {
+                grid-column: span 2;
+            }
+
+            .bc-f {
+                grid-column: span 2;
+            }
+
+            .bc-g {
+                grid-column: span 6;
+            }
+
+            .bc-h {
+                grid-column: span 6;
+            }
+
+            .showcase-bento {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .sb-a {
+                grid-column: span 6;
+                min-height: 320px;
+            }
+
+            .sb-b {
+                grid-column: span 3;
+            }
+
+            .sb-c {
+                grid-column: span 3;
+            }
+
+            .sb-d {
+                grid-column: span 3;
+            }
+
+            .sb-e {
+                grid-column: span 3;
+            }
+
+            .sb-f {
+                grid-column: span 6;
+            }
+
+            .sb-g {
+                grid-column: span 6;
+            }
+
+            .contact-buttons-grid {
+                grid-template-columns: 1fr;
+                max-width: 420px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            nav {
+                padding: 0 32px;
+            }
+
+            .section {
+                padding: 90px 32px;
+            }
+
+            .mid-cta {
+                padding: 90px 32px;
+            }
+
+            .contact-section {
+                padding: 90px 32px;
+            }
+
+            footer {
+                padding: 48px 32px;
+            }
+
+            .test-header {
+                padding: 0 32px;
+            }
+
+            .about-grid,
+            .prob-grid,
+            .seo-grid {
+                grid-template-columns: 1fr;
+                gap: 60px;
+            }
+
+            .about-visual-wrap {
+                position: relative;
+                top: auto;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .prob-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .process-steps {
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+            }
+
+            .bento-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .bc-a {
+                grid-column: span 2;
+            }
+
+            .bc-b,
+            .bc-c,
+            .bc-d,
+            .bc-e,
+            .bc-f,
+            .bc-g,
+            .bc-h {
+                grid-column: span 1;
+            }
+
+            .contact-buttons-grid {
+                grid-template-columns: 1fr;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .process-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bc-a,
+            .bc-b,
+            .bc-c,
+            .bc-d,
+            .bc-e,
+            .bc-f,
+            .bc-g,
+            .bc-h {
+                grid-column: span 1;
+            }
+
+            .showcase-bento {
+                grid-template-columns: 1fr;
+            }
+
+            .sb-a,
+            .sb-b,
+            .sb-c,
+            .sb-d,
+            .sb-e,
+            .sb-f,
+            .sb-g {
+                grid-column: span 1;
+            }
+
+            .hero-meta-row {
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+
+            .hero-cta-wrap {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .mid-cta-btns {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- CURSOR -->
+    <div id="cur">
+        <div id="cur-dot"></div>
+        <div id="cur-ring"></div>
+    </div>
+
+    <!-- NAV -->
+    <nav id="nav">
+        <a href="#" class="logo">Brew<em>Mind</em></a>
+        <ul class="nav-links">
+            <li><a href="#about">Studio</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#seo">Growth</a></li>
+            <li><a href="#process">Process</a></li>
+        </ul>
+        <a href="#contact" class="nav-btn">Book a Call</a>
+    </nav>
+
+    <!-- ─── HERO ─── -->
+    <section id="hero">
+        <div class="hero-canvas"></div>
+
+        <svg class="hero-ring-wrap" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
+        <svg class="hero-ring-wrap2" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
+
+        <div class="particles" id="particles"></div>
+
+        <div class="hero-canvas"
+            style="background-image: linear-gradient(to right, #ffffff 30%, transparent 80%), radial-gradient(ellipse 70% 60% at 80% 40%, rgba(255,107,0,.06) 0%, transparent 60%), url('https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1600'); background-size: cover; background-position: right center; opacity: 0.4;">
+        </div>
+
+        <div class="particles" id="h-particles"></div>
+
+        <!-- LEFT -->
+        <div class="hero-left">
+            <div class="hero-badge">India's First AI Café Studio</div>
+
+            <h1 class="hero-h1">
+                <span class="line"><span class="inner">Cinematic AI</span></span>
+                <span class="line"><span class="inner">Branding for India's</span></span>
+                <span class="line"><span class="inner"><em>Finest Cafés.</em></span></span>
+            </h1>
+
+            <p class="hero-sub">
+                We build premium AI-generated promotional worlds for cafés, bakeries &amp; dessert brands — no camera,
+                no shoots, no compromise. Just cinematic content that sells.
+            </p>
+
+            <div class="hero-cta-wrap">
+                <a href="#contact" class="btn-dark">Book a Strategy Call ↗</a>
+                <a href="#services" class="btn-ghost">Explore Services</a>
+            </div>
+
+            <div class="hero-meta-row">
+                <div class="hm-stat">
+                    <div class="hm-n">50+</div>
+                    <div class="hm-l">Cafés Transformed</div>
+                </div>
+                <div class="hm-stat">
+                    <div class="hm-n">48h</div>
+                    <div class="hm-l">Delivery Turnaround</div>
+                </div>
+                <div class="hm-stat">
+                    <div class="hm-n">0s</div>
+                    <div class="hm-l">On-Camera Time</div>
+                </div>
+                <div class="hm-stat">
+                    <div class="hm-n">3×</div>
+                    <div class="hm-l">Engagement Lift</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="hero-right">
+            <div class="hero-visual-card">
+                <!-- Top-left floating card -->
+                <div class="hero-float-card top-left">
+                    <div class="hfc-dot"></div>
+                    <div>
+                        <div class="hfc-label">AI Studio — Live</div>
+                    </div>
+                </div>
+
+                <div class="hero-main-visual" style="border-radius:20px; overflow:hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.15);">
+                    <img src="Images/Filter Coffee.jpeg"
+                        alt="Cinematic café ambience branding" style="width:100%;height:100%;object-fit:cover;">
+                    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%);padding:28px;">
+                        <div style="font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:6px;">AI Brand Content</div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:#fff;">Cinematic storytelling for your café</div>
+                    </div>
+                </div>
+
+                <div class="hero-float-card bottom-right" style="flex-direction:column;align-items:flex-start;gap:6px;">
+                    <div class="hfc-sub">Avg. Growth</div>
+                    <div class="hfc-n">3×</div>
+                    <div class="hfc-sub">Engagement Lift</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-scroll-ind">
+            <div class="scroll-bar"></div>
+            <span class="scroll-text">Scroll</span>
+        </div>
+    </section>
+
+    <!-- ─── ABOUT ─── -->
+    <section class="section dark" id="about">
+    <div class="about-grid">
+        <div class="about-visual-wrap rl">
+            <div class="about-svg-wrap" style="position: relative; width: 100%; max-width: 380px; aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center;">
+                
+                <div class="about-glow"></div>
+                
+                <div style="width: 100%; height: 100%; border: 1px solid var(--gold-dim); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.4); position: relative; z-index: 2;">
+                    <img src="Images/Coffee with Hand.jpeg" 
+                         alt="Cinematic café steam and interior branding asset" 
+                         style="width: 100%; height: 100%; object-fit: cover; filter: contrast(1.05) brightness(0.8) sepia(0.1); transform: scale(1.02); transition: transform 0.5s ease;">
+                </div>
+
+                <div class="about-badge" style="z-index: 3;">
+                    <div class="about-badge-n">50+</div>
+                    <div class="about-badge-l">Cafés Transformed</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="about-right">
+            <div class="s-label r">About BrewMind</div>
+            <h2 class="s-h2 r" style="margin-bottom: 64px;">We exist because cafés <em>deserve cinematic</em> stories.</h2>
+            <div class="about-blocks">
+                <div class="about-block r">
+                    <div class="ab-num">01 — The Problem</div>
+                    <h3 class="ab-h3">Most café owners feel invisible online</h3>
+                    <p class="ab-p">You craft incredible coffee, bake stunning pastries, and design beautiful spaces — yet your content doesn't reflect any of it. Traditional marketing demands expensive shoots and on-camera owners. That ends here.</p>
+                </div>
+                <div class="ab-divider r"></div>
+                <div class="about-block r">
+                    <div class="ab-num">02 — The Solution</div>
+                    <h3 class="ab-h3">Cinematic AI branding without the camera</h3>
+                    <p class="ab-p">BrewMind is India's first AI-powered creative studio built exclusively for cafés. We generate cinematic promotional films, animated social content, and complete brand identities — powered by AI, requiring zero camera time from you.</p>
+                </div>
+                <div class="ab-divider r"></div>
+                <div class="about-block r">
+                    <div class="ab-num">03 — The Difference</div>
+                    <h3 class="ab-h3">AI moves at the speed of a great idea</h3>
+                    <p class="ab-p">A traditional agency takes weeks and costs lakhs. We deliver AI-generated campaigns in 48 hours, at a fraction of the cost, with the polish of a premium creative studio — built for India's emerging café culture.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <!-- ─── WHY AI / PROBLEM ─── -->
+    <section class="section paper" id="why-ai">
+        <div class="prob-grid">
+            <div>
+                <div class="s-label r">Why AI Branding</div>
+                <h2 class="s-h2 r">Traditional shoots are <em>broken</em> for café owners.</h2>
+                <p class="r"
+                    style="margin-top: 24px; font-size: .9rem; line-height: 1.85; color: rgba(0,0,0,.45);">
+                    The old playbook — hire a photographer, book a videographer, coordinate a full-day shoot — doesn't
+                    work for independent café owners. AI changes everything about how cafés market themselves.
+                </p>
+                <div class="prob-stats r" style="margin-top: 40px;">
+                    <div class="ps-card r">
+                        <div class="ps-n">3×</div>
+                        <div class="ps-l">Higher engagement from AI-animated café reels</div>
+                    </div>
+                    <div class="ps-card r">
+                        <div class="ps-n">80%</div>
+                        <div class="ps-l">Cost reduction vs traditional video productions</div>
+                    </div>
+                    <div class="ps-card r">
+                        <div class="ps-n">48h</div>
+                        <div class="ps-l">Average delivery turnaround for your content</div>
+                    </div>
+                    <div class="ps-card r">
+                        <div class="ps-n">0s</div>
+                        <div class="ps-l">On-camera time required from you</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prob-cards">
+                <div class="prob-card rr">
+                    <div class="pc-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <rect x="1" y="3" width="16" height="12" rx="1" stroke="currentColor" stroke-width="1.2" />
+                            <path d="M6 7.5l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="pc-h4">AI-Generated Animated Videos</div>
+                        <p class="pc-p">Cinematic café promotions that look better than traditional shoots — crafted
+                            entirely by AI without a single camera in sight.</p>
+                    </div>
+                </div>
+                <div class="prob-card rr">
+                    <div class="pc-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <path d="M9 2L11.5 7H16L12.5 10.5L14 15.5L9 12.5L4 15.5L5.5 10.5L2 7H6.5Z"
+                                stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="pc-h4">AI Storytelling Content</div>
+                        <p class="pc-p">Narrative-driven brand films that connect emotionally, told through AI-crafted
+                            visuals, motion, and voice — no script reading required.</p>
+                    </div>
+                </div>
+                <div class="prob-card rr">
+                    <div class="pc-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <rect x="3" y="1" width="12" height="16" rx="1.5" stroke="currentColor"
+                                stroke-width="1.2" />
+                            <path d="M6 5h6M6 8h6M6 11h4" stroke="currentColor" stroke-width="1.2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="pc-h4">Animated Social Creatives</div>
+                        <p class="pc-p">Motion-based Instagram reels, story animations, and carousel creatives that stop
+                            thumbs mid-scroll and build genuine community.</p>
+                    </div>
+                </div>
+                <div class="prob-card rr">
+                    <div class="pc-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <circle cx="9" cy="9" r="7.5" stroke="currentColor" stroke-width="1.2" />
+                            <path d="M6.5 6.5 Q9 4 11.5 6.5 Q14 9 11.5 11.5 Q9 14 6.5 11.5" stroke="currentColor"
+                                stroke-width="1.2" fill="none" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="pc-h4">AI Voice-Based Branding</div>
+                        <p class="pc-p">Premium AI voiceovers and sonic identity that give your café a distinct,
+                            professional audio brand across all platforms.</p>
+                    </div>
+                </div>
+                <div class="prob-card rr">
+                    <div class="pc-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <path d="M2 14l4-4 3 3 3-4 4 5" stroke="currentColor" stroke-width="1.2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                            <rect x="1" y="1" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.2" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="pc-h4">Motion-Based Café Advertisements</div>
+                        <p class="pc-p">High-converting animated ads for Instagram, YouTube Shorts, and Google —
+                            designed to drive footfall and grow your audience.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── SERVICES ─── -->
+    <section class="section dark" id="services">
+        <div class="services-intro">
+            <div>
+                <div class="s-label r">What We Do</div>
+                <h2 class="s-h2 r">Everything your <em>café brand</em> needs.</h2>
+            </div>
+            <p class="services-desc r">End-to-end digital presence from AI cinematic videos to Google rankings — built
+                specifically for cafés, bakeries, and dessert brands across India.</p>
+        </div>
+
+        <div class="services-grid">
+            <div class="svc-card rs">
+                <div class="svc-svg" style="width:44px;height:44px;background:rgba(255,107,0,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🎬</div>
+                <div class="svc-n">01</div>
+                <div class="svc-h">AI Promotional Videos</div>
+                <p class="svc-p">Cinematic AI-generated animated films showcasing your café's ambience, menu, and brand
+                    story — without a single photoshoot.</p>
+                <span class="svc-arrow">↗</span>
+            </div>
+            <div class="svc-card rs">
+                <div class="svc-svg" style="width:44px;height:44px;background:rgba(255,107,0,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">📱</div>
+                <div class="svc-n">02</div>
+                <div class="svc-h">Social Media Management</div>
+                <p class="svc-p">Complete Instagram, Facebook, and YouTube presence — content calendar, posting,
+                    engagement, and precise growth strategy.</p>
+                <span class="svc-arrow">↗</span>
+            </div>
+            <div class="svc-card rs">
+                <div class="svc-svg" style="width:44px;height:44px;background:rgba(255,107,0,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🔍</div>
+                <div class="svc-n">03</div>
+                <div class="svc-h">Local SEO & AEO</div>
+                <p class="svc-p">Rank on Google Search and AI answer engines. When someone asks "best café near me,"
+                    your name appears first — guaranteed.</p>
+                <span class="svc-arrow">↗</span>
+            </div>
+            <div class="svc-card rs">
+                <div class="svc-svg" style="width:44px;height:44px;background:rgba(255,107,0,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">✦</div>
+                <div class="svc-n">04</div>
+                <div class="svc-h">Brand Identity Design</div>
+                <p class="svc-p">Visual identity, brand voice, color systems, typography, and complete brand guidelines
+                    that make your café unmistakable.</p>
+                <span class="svc-arrow">↗</span>
+            </div>
+            <div class="svc-card rs">
+                <div class="svc-svg" style="width:44px;height:44px;background:rgba(255,107,0,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">📍</div>
+                <div class="svc-n">05</div>
+                <div class="svc-h">Google Business Optimization</div>
+                <p class="svc-p">Complete GBP setup, photo strategy, review management, and Maps ranking to drive
+                    consistent walk-in traffic from local searches.</p>
+                <span class="svc-arrow">↗</span>
+            </div>
+            <div class="svc-card rs">
+                <div class="svc-svg" style="width:44px;height:44px;background:rgba(255,107,0,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">📈</div>
+                <div class="svc-n">06</div>
+                <div class="svc-h">Reel & Motion Marketing</div>
+                <p class="svc-p">High-converting Instagram and YouTube Shorts strategy with AI-animated reels designed
+                    to build community and viral reach.</p>
+                <span class="svc-arrow">↗</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── TRANSFORMATION — BENTO GRID ─── -->
+    <section class="section mid" id="transformation">
+    <div class="bento-header">
+        <div class="s-label r">Before & After</div>
+        <h2 class="s-h2 r">What changes when you <em>brand right.</em></h2>
+        <p class="r" style="margin-top: 22px; font-size: .9rem; line-height: 1.8; color: rgba(0,0,0,.4); max-width: 520px;">
+            The difference between a café that struggles and one that thrives is rarely the coffee — it's brand perception, digital presence, and content quality.
+        </p>
+    </div>
+
+    <div class="bento-grid">
+
+        <!-- HERO IMAGE TILE: Before / After split -->
+        <div class="bc bc-a rl" style="position: relative; overflow: hidden; border-radius:16px;">
+            <div style="position: absolute; inset: 0; display: flex; width: 100%; height: 100%; z-index: 1;">
+                <div style="width: 50%; height: 100%; position: relative; overflow:hidden;">
+                    <img src="https://images.unsplash.com/photo-1522992319-0365e5f11656?q=80&w=600" alt="Before branding - plain café" style="width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) brightness(0.55); transform:scale(1.05);">
+                    <div style="position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background:rgba(0,0,0,0.5); padding:4px 14px; border-radius:50px; font-size: 11px; color: rgba(255,255,255,0.7); font-style: italic; letter-spacing: 1px; white-space:nowrap;">Before</div>
+                </div>
+                <div style="width: 2px; background: linear-gradient(to bottom, transparent, #ff6b00 20%, #ff6b00 80%, transparent); position: relative; z-index: 2; flex-shrink:0;"></div>
+                <div style="width: 50%; height: 100%; position: relative; overflow:hidden;">
+                    <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600" alt="After branding - cinematic café" style="width: 100%; height: 100%; object-fit: cover; filter: contrast(1.05) brightness(0.9);">
+                    <div style="position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background:rgba(255,107,0,0.85); padding:4px 14px; border-radius:50px; font-size: 11px; color: #ffffff; font-style: italic; letter-spacing: 1px; white-space:nowrap;">After</div>
+                </div>
+            </div>
+            <div class="bc-inner" style="position: relative; z-index: 3;">
+                <div class="ba-pill"><span>✦</span> Transformation</div>
+                <div class="bc-h" style="font-size:1.7rem;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.5);">From invisible café to a brand that owns its market</div>
+            </div>
+        </div>
+
+        <!-- Social Presence tile with image -->
+        <div class="bc bc-b r" style="position:relative;overflow:hidden;border-radius:12px;">
+            <img src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=600" alt="Instagram social media growth" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.12;">
+            <div class="bc-inner space" style="position:relative;z-index:2;">
+                <div>
+                    <div class="bc-tag">Social Presence</div>
+                    <div class="bc-h">Zero posts to 8,000 followers</div>
+                    <p class="bc-p">Consistent AI-animated content builds real community.</p>
+                </div>
+                <div class="bc-list">
+                    <div class="bc-li muted">Inconsistent or no posting</div>
+                    <div class="bc-li">Weekly cinematic reels, on-schedule</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bc bc-c r" style="background: linear-gradient(145deg, #ff6b00, #cc4400); border:none; border-radius:12px;">
+            <div class="bc-inner center">
+                <div class="bc-num" style="color:#fff;">3×</div>
+                <div class="bc-num-label" style="color:rgba(255,255,255,0.7);">Engagement<br>Multiplier</div>
+            </div>
+        </div>
+
+        <!-- Google Maps tile with image -->
+        <div class="bc bc-d r" style="position: relative; overflow: hidden; border-radius:12px;">
+            <img src="https://images.unsplash.com/photo-1453614512568-c4024d13c247?q=80&w=800" alt="Busy café with customers" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.1;">
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);z-index:2;text-align:center;">
+                <div style="width:72px;height:72px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;background:rgba(255,107,0,0.08);">
+                    <span style="color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:bold;">#1</span>
+                </div>
+            </div>
+            <div class="bc-inner" style="position: relative; z-index: 3;">
+                <div class="bc-tag">Google Maps</div>
+                <div class="bc-h">#1 on local search for your area</div>
+            </div>
+        </div>
+
+        <div class="bc bc-e r" style="background: var(--ink); border:none; border-radius:12px;">
+            <div class="bc-inner center">
+                <div class="bc-num" style="font-size:3.2rem;color:#fff;">80%</div>
+                <div class="bc-num-label" style="color:rgba(255,255,255,0.5);">Lower cost vs<br>traditional shoots</div>
+            </div>
+        </div>
+
+        <div class="bc bc-f r" style="background:linear-gradient(145deg,#ff6b00,#ff8c38);border:none;border-radius:12px;">
+            <div class="bc-inner center">
+                <div class="bc-num" style="font-size:3.2rem;color:#fff;">48h</div>
+                <div class="bc-num-label" style="color:rgba(255,255,255,0.7);">Delivery<br>Turnaround</div>
+            </div>
+        </div>
+
+        <!-- Before BrewMind -->
+        <div class="bc bc-g r" style="border-radius:12px;">
+            <div class="bc-inner space">
+                <div>
+                    <div class="bc-tag">Before BrewMind</div>
+                    <div class="bc-h" style="color:rgba(0,0,0,.4);">The old way holds cafés back</div>
+                </div>
+                <div class="bc-list">
+                    <div class="bc-li muted">Expensive, unreliable freelancers</div>
+                    <div class="bc-li muted">No brand identity or voice</div>
+                    <div class="bc-li muted">Camera-shy owners, zero content</div>
+                    <div class="bc-li muted">Low footfall despite great quality</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- After BrewMind with image -->
+        <div class="bc bc-h r" style="position:relative;overflow:hidden;border-radius:12px;border-color:rgba(255,107,0,0.2);">
+            <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=600" alt="Vibrant café branding after BrewMind" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.08;">
+            <div class="bc-inner space" style="position:relative;z-index:2;">
+                <div>
+                    <div class="bc-tag" style="color:var(--gold);">After BrewMind</div>
+                    <div class="bc-h">A premium brand that sells itself</div>
+                </div>
+                <div class="bc-list">
+                    <div class="bc-li">Cinematic AI content, every week</div>
+                    <div class="bc-li">Distinct identity across all platforms</div>
+                    <div class="bc-li">Zero on-camera time required</div>
+                    <div class="bc-li">Growing waitlists, high footfall</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+    <!-- ─── SOCIAL SHOWCASE — BENTO ─── -->
+    <section class="section dark" id="social">
+        <div style="text-align: center; max-width: 600px; margin: 0 auto;">
+            <div class="s-label r" style="justify-content: center;">Content Showcase</div>
+            <h2 class="s-h2 r" style="font-size: clamp(2.2rem, 4.5vw, 4.5rem);">Content that <em>stops the scroll.</em>
+            </h2>
+            <p class="r" style="margin-top: 18px; font-size: .88rem; line-height: 1.8; color: rgba(0,0,0,.4);">
+                AI-generated café content that outperforms traditional photography — built to perform on every platform.
+            </p>
+        </div>
+
+        <div class="showcase-bento">
+
+            <!-- sa: Tall left — real café image -->
+            <div class="show-card sb-a rs">
+                <img src="Images/Coffee with Hand.jpeg" alt="Cinematic espresso pour reel" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+                <div class="show-overlay"></div>
+                <div class="show-meta">
+                    <div class="show-tag">Cinematic Reel</div>
+                    <div class="show-name">Morning Ritual — The Artisan Pour</div>
+                </div>
+            </div>
+
+            <!-- sb: top-mid — café interior image -->
+            <div class="show-card sb-b rs">
+                <img src="Images/Filter Coffee.jpeg" alt="Weekend brunch launch campaign" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+                <div class="show-overlay" style="background: linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 55%);"></div>
+                <div class="show-meta">
+                    <div class="show-tag">Story Campaign</div>
+                    <div class="show-name">Weekend Brunch Launch</div>
+                </div>
+            </div>
+
+            <!-- sc: stats card (no image needed) -->
+            <div class="show-card sb-c rs" style="position:relative;">
+                <div style="position:absolute;inset:0;background:var(--ink);display:flex;flex-direction:column;justify-content:center;padding:32px;gap:24px;z-index:1;">
+                    <div>
+                        <div class="show-tag" style="margin-bottom:10px;">Platform Growth</div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:3.2rem;font-weight:700;color:var(--gold);line-height:1;">8K</div>
+                        <div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:4px;">Instagram followers in 4 months</div>
+                    </div>
+                    <div style="display:flex;align-items:flex-end;gap:6px;height:60px;">
+                        <div style="flex:1;background:rgba(255,255,255,0.08);height:20%;border-radius:2px 2px 0 0;"></div>
+                        <div style="flex:1;background:rgba(255,107,0,0.3);height:35%;border-radius:2px 2px 0 0;"></div>
+                        <div style="flex:1;background:rgba(255,107,0,0.5);height:55%;border-radius:2px 2px 0 0;"></div>
+                        <div style="flex:1;background:rgba(255,107,0,0.7);height:70%;border-radius:2px 2px 0 0;"></div>
+                        <div style="flex:1;background:var(--gold);height:100%;border-radius:2px 2px 0 0;box-shadow:0 0 12px rgba(255,107,0,0.5);"></div>
+                    </div>
+                    <div style="font-size:.65rem;color:rgba(255,255,255,.25);letter-spacing:.1em;">No camera. No shoots. Pure AI.</div>
+                </div>
+            </div>
+
+            <!-- sd: dessert image -->
+            <div class="show-card sb-d rs">
+                <img src="Images/Machine.jpeg" alt="Signature dessert product feature" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+                <div class="show-overlay"></div>
+                <div class="show-meta">
+                    <div class="show-tag">Product Feature</div>
+                    <div class="show-name">Signature Dessert Series</div>
+                </div>
+            </div>
+
+            <!-- se: moody café night image -->
+            <div class="show-card sb-e rs">
+                <img src="Images/Filter Coffee 2.jpeg" alt="Midnight menu drop seasonal campaign" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+                <div class="show-overlay"></div>
+                <div class="show-meta">
+                    <div class="show-tag">Seasonal Campaign</div>
+                    <div class="show-name">Midnight Menu Drop</div>
+                </div>
+            </div>
+
+            <!-- sf: wide brand film — barista image -->
+            <div class="show-card sb-f rs">
+                <img src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?q=80&w=1200" alt="Brand film full AI production barista" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+                <div class="show-overlay"></div>
+                <!-- Play button -->
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;">
+                    <div style="width:64px;height:64px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;background:rgba(255,107,0,0.2);backdrop-filter:blur(4px);">
+                        <span style="color:#fff;font-size:1.2rem;margin-left:4px;">▶</span>
+                    </div>
+                </div>
+                <div class="show-meta">
+                    <div class="show-tag">Brand Film</div>
+                    <div class="show-name">The BrewMind Brand Story — Full AI Production</div>
+                </div>
+            </div>
+            <!-- sg: Bottom stats bar -->
+            <div class="sb-stats sb-g rs">
+                <div class="sbs-label">Content Performance</div>
+                <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-end;">
+                    <div>
+                        <div class="sbs-n">+340%</div>
+                        <div class="sbs-sub">Search visibility</div>
+                    </div>
+                    <div>
+                        <div class="sbs-n">2×</div>
+                        <div class="sbs-sub">Weekend revenue</div>
+                    </div>
+                    <div>
+                        <div class="sbs-n">0s</div>
+                        <div class="sbs-sub">On-camera time</div>
+                    </div>
+                    <div style="margin-left:auto;align-self:center;">
+                        <a href="#contact" class="btn-dark" style="cursor:none;">Get Started ↗</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ─── SEO ─── -->
+    <section class="section paper" id="seo">
+        <div class="seo-grid">
+            <div>
+                <div class="s-label r">Search & Visibility</div>
+                <h2 class="s-h2 r">Be the first café <em>they find.</em></h2>
+                <p class="r"
+                    style="margin-top: 24px; font-size: .9rem; line-height: 1.85; color: rgba(0,0,0,.45);">
+                    Local SEO, Google Business optimization, and Answer Engine Optimization — so your café shows up
+                    first everywhere people search, including AI assistants like Google SGE and ChatGPT.
+                </p>
+                <div class="seo-feats r">
+                    <div class="sf"><span class="sf-l">Google Maps Ranking</span><span class="sf-tag">Local Pack</span>
+                    </div>
+                    <div class="sf"><span class="sf-l">Answer Engine Optimization</span><span class="sf-tag">AEO</span>
+                    </div>
+                    <div class="sf"><span class="sf-l">Google Business Profile</span><span class="sf-tag">GBP
+                            Setup</span></div>
+                    <div class="sf"><span class="sf-l">Review Management</span><span class="sf-tag">Reputation</span>
+                    </div>
+                    <div class="sf"><span class="sf-l">Keyword & Content Strategy</span><span
+                            class="sf-tag">Organic</span></div>
+                </div>
+            </div>
+            <div class="seo-chart-wrap">
+                <div class="seo-metric-card rr">
+                    <div class="smc-n">+340%</div>
+                    <div class="smc-l">Avg. visibility increase</div>
+                </div>
+                <div class="seo-chart rs">
+                    <div class="chart-ttl">Monthly Search Visibility Growth</div>
+                    <div class="chart-bars" id="cbars">
+                        <div class="cb" style="height: 0%" data-h="18"></div>
+                        <div class="cb" style="height: 0%" data-h="26"></div>
+                        <div class="cb" style="height: 0%" data-h="34"></div>
+                        <div class="cb gold" style="height: 0%" data-h="46"></div>
+                        <div class="cb gold" style="height: 0%" data-h="60"></div>
+                        <div class="cb gold" style="height: 0%" data-h="74"></div>
+                        <div class="cb lit" style="height: 0%" data-h="90"></div>
+                    </div>
+                    <div class="chart-mnths">
+                        <div class="cm">M1</div>
+                        <div class="cm">M2</div>
+                        <div class="cm">M3</div>
+                        <div class="cm">M4</div>
+                        <div class="cm">M5</div>
+                        <div class="cm">M6</div>
+                        <div class="cm">M7</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── TESTIMONIALS — INFINITE SCROLL ─── -->
+    <section class="test-section" id="testimonials">
+        <div class="test-header">
+            <div class="s-label r" style="justify-content: center;">Client Stories</div>
+            <h2 class="s-h2 r" style="font-size: clamp(2.2rem, 4.5vw, 4.5rem);">Cafés that <em>grew</em> with us.</h2>
+            <p class="r" style="margin-top: 16px; font-size: .88rem; line-height: 1.8; color: rgba(0,0,0,.4);">
+                Real results from real café owners across India.</p>
+        </div>
+
+        <div class="test-track-wrap">
+            <!-- Row 1 -->
+            <div class="test-track" id="ttrack1">
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"BrewMind gave our small café in Bengaluru a brand presence that rivals specialty
+                        chains. The AI videos looked so cinematic — our customers kept asking which agency we hired for
+                        the shoot. There was no shoot."</p>
+                    <div class="test-author">
+                        <div class="test-av">A</div>
+                        <div>
+                            <div class="test-name">Arjun Mehta</div>
+                            <div class="test-role">Founder, Artisan Roast — Indiranagar</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"I was terrified of being on camera. BrewMind solved that completely. They built
+                        our entire brand story using AI animation — our Instagram went from 400 to 8,000 followers in
+                        four months. Zero photoshoots."</p>
+                    <div class="test-author">
+                        <div class="test-av">P</div>
+                        <div>
+                            <div class="test-name">Priya Nair</div>
+                            <div class="test-role">Owner, Butter & Bloom Bakery — Pune</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"Google ranking went from nowhere to top 3 for 'dessert café Delhi' in 3 months.
+                        The team also redesigned our complete brand identity. Our weekend revenue doubled. Worth every
+                        rupee, genuinely."</p>
+                    <div class="test-author">
+                        <div class="test-av">R</div>
+                        <div>
+                            <div class="test-name">Rohit Sharma</div>
+                            <div class="test-role">Co-Founder, Cloud Nine Desserts — Delhi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"The cinematic reels BrewMind created for our bakery look absolutely stunning. Our
+                        competitors are still doing basic phone photos. We're in a completely different league now — all
+                        AI, no camera stress."</p>
+                    <div class="test-author">
+                        <div class="test-av">S</div>
+                        <div>
+                            <div class="test-name">Sneha Iyer</div>
+                            <div class="test-role">Owner, Sugar & Spice Bakehouse — Chennai</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"From 200 to 5,500 Instagram followers in just 3 months. The AI branding made our
+                        dessert café look like a Bandra concept store. Footfall is up 60%. BrewMind is the single best
+                        investment we made."</p>
+                    <div class="test-author">
+                        <div class="test-av">K</div>
+                        <div>
+                            <div class="test-name">Karan Kapoor</div>
+                            <div class="test-role">Co-Founder, Velvet Crumble — Mumbai</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Duplicate for seamless loop -->
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"BrewMind gave our small café in Bengaluru a brand presence that rivals specialty
+                        chains. The AI videos looked so cinematic — our customers kept asking which agency we hired for
+                        the shoot. There was no shoot."</p>
+                    <div class="test-author">
+                        <div class="test-av">A</div>
+                        <div>
+                            <div class="test-name">Arjun Mehta</div>
+                            <div class="test-role">Founder, Artisan Roast — Indiranagar</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"I was terrified of being on camera. BrewMind solved that completely. They built
+                        our entire brand story using AI animation — our Instagram went from 400 to 8,000 followers in
+                        four months. Zero photoshoots."</p>
+                    <div class="test-author">
+                        <div class="test-av">P</div>
+                        <div>
+                            <div class="test-name">Priya Nair</div>
+                            <div class="test-role">Owner, Butter & Bloom Bakery — Pune</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"Google ranking went from nowhere to top 3 for 'dessert café Delhi' in 3 months.
+                        The team also redesigned our complete brand identity. Our weekend revenue doubled. Worth every
+                        rupee, genuinely."</p>
+                    <div class="test-author">
+                        <div class="test-av">R</div>
+                        <div>
+                            <div class="test-name">Rohit Sharma</div>
+                            <div class="test-role">Co-Founder, Cloud Nine Desserts — Delhi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"The cinematic reels BrewMind created for our bakery look absolutely stunning. Our
+                        competitors are still doing basic phone photos. We're in a completely different league now — all
+                        AI, no camera stress."</p>
+                    <div class="test-author">
+                        <div class="test-av">S</div>
+                        <div>
+                            <div class="test-name">Sneha Iyer</div>
+                            <div class="test-role">Owner, Sugar & Spice Bakehouse — Chennai</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"From 200 to 5,500 Instagram followers in just 3 months. The AI branding made our
+                        dessert café look like a Bandra concept store. Footfall is up 60%. BrewMind is the single best
+                        investment we made."</p>
+                    <div class="test-author">
+                        <div class="test-av">K</div>
+                        <div>
+                            <div class="test-name">Karan Kapoor</div>
+                            <div class="test-role">Co-Founder, Velvet Crumble — Mumbai</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2 (reverse direction) -->
+            <div class="test-track-2" id="ttrack2">
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"BrewMind's SEO work was outstanding. 'Best café Koramangala' — we're now #1. The
+                        monthly AI content package keeps our feed looking premium without any effort from our side.
+                        Absolute game changer."</p>
+                    <div class="test-author">
+                        <div class="test-av">V</div>
+                        <div>
+                            <div class="test-name">Vikram Sinha</div>
+                            <div class="test-role">Founder, Drip Theory — Koramangala</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"Our café theme is 'witchy forest' and BrewMind captured it in AI animations
+                        perfectly. Customers come in saying they found us through our Instagram reels. The content sells
+                        the experience before they even arrive."</p>
+                    <div class="test-author">
+                        <div class="test-av">N</div>
+                        <div>
+                            <div class="test-name">Nandini Rao</div>
+                            <div class="test-role">Owner, The Mossy Cup — Mysuru</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"We thought AI branding wouldn't feel personal. We were wrong. The animations
+                        BrewMind made feel like they were shot inside our actual café. The warm tones, the textures —
+                        it's uncanny how accurate the vibe is."</p>
+                    <div class="test-author">
+                        <div class="test-av">M</div>
+                        <div>
+                            <div class="test-name">Meera Patel</div>
+                            <div class="test-role">Co-Owner, Cardamom & Co — Ahmedabad</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"The 48-hour delivery promise is real. We needed content for a new menu launch —
+                        BrewMind delivered 3 cinematic reels, 6 stories, and a brand film within 2 days. The engagement
+                        on those posts was insane."</p>
+                    <div class="test-author">
+                        <div class="test-av">T</div>
+                        <div>
+                            <div class="test-name">Tanya Menon</div>
+                            <div class="test-role">Founder, Toffee House — Kochi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"Spending ₹3 lakhs on a traditional shoot seemed unavoidable. BrewMind delivered a
+                        full brand identity plus 6 months of AI content for less than half that. And our content looks
+                        better than the cafés who spent full price."</p>
+                    <div class="test-author">
+                        <div class="test-av">D</div>
+                        <div>
+                            <div class="test-name">Deepak Anand</div>
+                            <div class="test-role">Owner, Third Wave House — Hyderabad</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Duplicate row 2 -->
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"BrewMind's SEO work was outstanding. 'Best café Koramangala' — we're now #1. The
+                        monthly AI content package keeps our feed looking premium without any effort from our side.
+                        Absolute game changer."</p>
+                    <div class="test-author">
+                        <div class="test-av">V</div>
+                        <div>
+                            <div class="test-name">Vikram Sinha</div>
+                            <div class="test-role">Founder, Drip Theory — Koramangala</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"Our café theme is 'witchy forest' and BrewMind captured it in AI animations
+                        perfectly. Customers come in saying they found us through our Instagram reels. The content sells
+                        the experience before they even arrive."</p>
+                    <div class="test-author">
+                        <div class="test-av">N</div>
+                        <div>
+                            <div class="test-name">Nandini Rao</div>
+                            <div class="test-role">Owner, The Mossy Cup — Mysuru</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"We thought AI branding wouldn't feel personal. We were wrong. The animations
+                        BrewMind made feel like they were shot inside our actual café. The warm tones, the textures —
+                        it's uncanny how accurate the vibe is."</p>
+                    <div class="test-author">
+                        <div class="test-av">M</div>
+                        <div>
+                            <div class="test-name">Meera Patel</div>
+                            <div class="test-role">Co-Owner, Cardamom & Co — Ahmedabad</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"The 48-hour delivery promise is real. We needed content for a new menu launch —
+                        BrewMind delivered 3 cinematic reels, 6 stories, and a brand film within 2 days. The engagement
+                        on those posts was insane."</p>
+                    <div class="test-author">
+                        <div class="test-av">T</div>
+                        <div>
+                            <div class="test-name">Tanya Menon</div>
+                            <div class="test-role">Founder, Toffee House — Kochi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-card">
+                    <div class="test-stars">★★★★★</div>
+                    <p class="test-q">"Spending ₹3 lakhs on a traditional shoot seemed unavoidable. BrewMind delivered a
+                        full brand identity plus 6 months of AI content for less than half that. And our content looks
+                        better than the cafés who spent full price."</p>
+                    <div class="test-author">
+                        <div class="test-av">D</div>
+                        <div>
+                            <div class="test-name">Deepak Anand</div>
+                            <div class="test-role">Owner, Third Wave House — Hyderabad</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MID CTA -->
+    <div class="mid-cta">
+        <div class="mid-cta-glow"></div>
+        <div class="mid-cta-label r">Start Today</div>
+        <h2 class="r">Your café deserves<br><em>cinematic storytelling.</em></h2>
+        <div class="mid-cta-btns r">
+            <a href="#contact" class="btn-dark">Book a Free Strategy Call ↗</a>
+            <a href="#services" class="btn-ghost">Explore Services</a>
+        </div>
+    </div>
+
+    <!-- ─── PROCESS ─── -->
+    <section class="section dark" id="process" style="background:#ffffff;">
+        <div style="max-width: 600px; margin-bottom: 80px;">
+            <div class="s-label r">How We Work</div>
+            <h2 class="s-h2 r">From brand discovery to <em>viral growth.</em></h2>
+            <p class="r" style="margin-top:18px;font-size:.9rem;line-height:1.8;color:rgba(0,0,0,.4);">A proven 5-step system that transforms any café into a premium digital brand — no camera, no stress, just results.</p>
+        </div>
+
+        <!-- New 2-column image+text layout -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+
+            <!-- Step 01 -->
+            <div class="pstep-card rs" style="position:relative;overflow:hidden;border-radius:16px;min-height:320px;background:#f8f8f8;border:1px solid rgba(0,0,0,0.06);">
+                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800" alt="Brand discovery strategy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.18;">
+                <div style="position:relative;z-index:2;padding:40px;">
+                    <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff;margin-bottom:24px;">01</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:12px;">Brand Discovery</div>
+                    <p style="font-size:.82rem;line-height:1.7;color:rgba(0,0,0,.45);">We study your café's story, audience, competitors, and existing presence to build a precise AI growth blueprint.</p>
+                </div>
+            </div>
+
+            <!-- Step 02 -->
+            <div class="pstep-card rs" style="position:relative;overflow:hidden;border-radius:16px;min-height:320px;background:#f8f8f8;border:1px solid rgba(0,0,0,0.06);">
+                <img src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=800" alt="AI content planning social media" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.15;">
+                <div style="position:relative;z-index:2;padding:40px;">
+                    <div style="width:48px;height:48px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:24px;">02</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:12px;">AI Content Planning</div>
+                    <p style="font-size:.82rem;line-height:1.7;color:rgba(0,0,0,.45);">We map your full content strategy — reels, stories, campaigns, and promotional films — month by month.</p>
+                </div>
+            </div>
+
+            <!-- Step 03 — wide tile with real image -->
+            <div class="pstep-card rs" style="position:relative;overflow:hidden;border-radius:16px;min-height:300px;grid-column:span 2;background:#0a0a0a;border:none;">
+                <img src="https://images.unsplash.com/photo-1559136555-9303baea8ebd?q=80&w=1200" alt="Animation production creative studio" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.35;">
+                <div style="position:absolute;inset:0;background:linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 100%);"></div>
+                <div style="position:relative;z-index:2;padding:48px;display:flex;align-items:center;gap:48px;">
+                    <div style="flex-shrink:0;">
+                        <div style="width:64px;height:64px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:#fff;">03</div>
+                    </div>
+                    <div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:600;color:#fff;margin-bottom:12px;">Animation & Production</div>
+                        <p style="font-size:.88rem;line-height:1.7;color:rgba(255,255,255,.55);max-width:520px;">Our AI studio generates cinematic videos, motion creatives, and branded content — no camera, no shoots needed. Delivered in 48 hours.</p>
+                    </div>
+                    <div style="margin-left:auto;flex-shrink:0;text-align:center;">
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:3.5rem;font-weight:700;color:var(--gold);line-height:1;">48h</div>
+                        <div style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:4px;">Avg. Delivery</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 04 -->
+            <div class="pstep-card rs" style="position:relative;overflow:hidden;border-radius:16px;min-height:300px;background:#f8f8f8;border:1px solid rgba(0,0,0,0.06);">
+                <img src="https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?q=80&w=800" alt="Social media launch publishing" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.12;">
+                <div style="position:relative;z-index:2;padding:40px;">
+                    <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:#fff;margin-bottom:24px;">04</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:12px;">Social Media Launch</div>
+                    <p style="font-size:.82rem;line-height:1.7;color:rgba(0,0,0,.45);">We publish, schedule, and manage content across platforms with precision timing and engagement strategy.</p>
+                </div>
+            </div>
+
+            <!-- Step 05 -->
+            <div class="pstep-card rs" style="position:relative;overflow:hidden;border-radius:16px;min-height:300px;background:#fff8f5;border:2px solid rgba(255,107,0,0.15);">
+                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800" alt="Growth analytics optimization dashboard" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.1;">
+                <div style="position:relative;z-index:2;padding:40px;">
+                    <div style="width:48px;height:48px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:24px;">05</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:12px;">Growth Optimization</div>
+                    <p style="font-size:.82rem;line-height:1.7;color:rgba(0,0,0,.45);">Weekly analytics, SEO optimization, and continuous refinement to maximize footfall and sustainable revenue.</p>
+                    <div style="margin-top:20px;display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:#fff;padding:10px 20px;border-radius:50px;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;">
+                        <span>📈</span> Viral Growth
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ─── CONTACT — BUTTONS ONLY ─── -->
+    <section class="contact-section" id="contact">
+        <div class="contact-hero">
+            <div class="s-label r" style="justify-content: center;">Get In Touch</div>
+            <h2 class="s-h2 r" style="font-size: clamp(2.8rem, 5.5vw, 5.5rem);">Turn your café into <em>a brand.</em>
+            </h2>
+            <p class="r" style="color:rgba(0,0,0,.45);">Ready to see what AI-powered branding can do for your café? Reach out through any channel — we
+                typically respond within 2 hours.</p>
+        </div>
+
+        <div class="contact-buttons-grid">
+            <a class="contact-btn-card r" href="https://wa.me/9701491742" target="_blank">
+                <div class="cbc-icon">💬</div>
+                <div class="cbc-label">Instant Chat</div>
+                <div class="cbc-title">WhatsApp Us</div>
+                <div class="cbc-sub">+91 9701491742</div>
+                <div class="cbc-arrow">↗</div>
+            </a>
+            <a class="contact-btn-card r" href="https://instagram.com/brewmind" target="_blank">
+                <div class="cbc-icon">📸</div>
+                <div class="cbc-label">Follow & DM</div>
+                <div class="cbc-title">Instagram</div>
+                <div class="cbc-sub">@brewmind.studio</div>
+                <div class="cbc-arrow">↗</div>
+            </a>
+            <a class="contact-btn-card r" href="mailto:hello@brewmind.in">
+                <div class="cbc-icon">✉️</div>
+                <div class="cbc-label">Email Us</div>
+                <div class="cbc-title">Send a Message</div>
+                <div class="cbc-sub">hello@brewmind.in</div>
+                <div class="cbc-arrow">↗</div>
+            </a>
+        </div>
+    </section>
+
+    <!-- ─── FOOTER ─── -->
+    <footer>
+        <div class="footer-top">
+            <div>
+                <div class="footer-logo">Brew<em>Mind</em></div>
+                <p class="footer-tagline">India's first AI-powered creative studio built exclusively for cafés,
+                    bakeries, dessert brands, and coffee shops.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#about">Studio</a>
+                <a href="#services">Services</a>
+                <a href="#seo">Growth</a>
+                <a href="#process">Process</a>
+                <a href="#contact">Contact</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-copy">© 2026 BrewMind Studio. All rights reserved.</div>
+            <div class="footer-copy">Brewed with love in India. ☕</div>
+        </div>
+    </footer>
+
+    <script>
+        // ─── CURSOR ───
+        const cur = document.getElementById('cur');
+        const dot = document.getElementById('cur-dot');
+        const ring = document.getElementById('cur-ring');
+        let mx = 0, my = 0, rx = 0, ry = 0;
+
+        document.addEventListener('mousemove', e => {
+            mx = e.clientX; my = e.clientY;
+            dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+        });
+
+        (function animRing() {
+            rx += (mx - rx) * 0.1; ry += (my - ry) * 0.1;
+            ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+            requestAnimationFrame(animRing);
+        })();
+
+        document.querySelectorAll('a, button, .svc-card, .prob-card, .test-card, .show-card, .pstep, .sf, .bc, .contact-btn-card').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // ─── PARTICLES ───
+        const pWrap = document.getElementById('particles');
+        for (let i = 0; i < 22; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 3 + 1;
+            p.style.cssText = `
+    --d: ${7 + Math.random() * 8}s;
+    --delay: ${Math.random() * 8}s;
+    --s: ${size}px;
+    --x: ${Math.random() * 100}%;
+    bottom: 0;
+    animation-delay: var(--delay);
+  `;
+            pWrap.appendChild(p);
+        }
+
+        // ─── NAV SCROLL ───
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 60);
+        });
+
+        // ─── SCROLL REVEAL ───
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('up'); });
+        }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+        document.querySelectorAll('.r, .rl, .rr, .rs').forEach((el, i) => {
+            el.style.transitionDelay = `${(i % 5) * 0.07}s`;
+            observer.observe(el);
+        });
+
+        // ─── CHART BARS ───
+        const chartObserver = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+                document.querySelectorAll('.cb').forEach((bar, i) => {
+                    setTimeout(() => {
+                        bar.style.transition = 'height 1s cubic-bezier(.16,1,.3,1)';
+                        bar.style.height = bar.dataset.h + '%';
+                    }, i * 100);
+                });
+                chartObserver.disconnect();
+            }
+        }, { threshold: 0.5 });
+        const cbars = document.getElementById('cbars');
+        if (cbars) chartObserver.observe(cbars);
+
+        // ─── SMOOTH ANCHOR SCROLL ───
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', e => {
+                const href = a.getAttribute('href');
+                if (href === '#') return;
+                e.preventDefault();
+                const t = document.querySelector(href);
+                if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // ─── PARALLAX HERO RINGS ───
+        window.addEventListener('scroll', () => {
+            const sy = window.scrollY;
+            const r1 = document.querySelector('.hero-ring-wrap');
+            const r2 = document.querySelector('.hero-ring-wrap2');
+            if (r1) r1.style.transform = `translateY(calc(-50% + ${sy * 0.15}px)) rotate(${sy * 0.03}deg)`;
+            if (r2) r2.style.transform = `translateY(calc(-50% + ${sy * 0.2}px)) rotate(${-sy * 0.04}deg)`;
+        });
+
+        // ─── MAGNETIC BUTTONS ───
+        document.querySelectorAll('.btn-dark, .btn-ghost, .nav-btn').forEach(btn => {
+            btn.addEventListener('mousemove', e => {
+                const rect = btn.getBoundingClientRect();
+                const bx = e.clientX - rect.left - rect.width / 2;
+                const by = e.clientY - rect.top - rect.height / 2;
+                btn.style.transform = `translate(${bx * 0.22}px, ${by * 0.22}px)`;
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = '';
+                btn.style.transition = 'transform .5s ease';
+            });
+        });
+    </script>
+</body>
+
+</html>
